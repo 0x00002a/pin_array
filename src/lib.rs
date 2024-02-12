@@ -4,12 +4,9 @@ use iter::{Iter, IterMut};
 
 pub mod iter;
 
-/// An structurally pinned array of values
+/// A [structurally pinned][structural pinning] array of values
 ///
-/// [Structural pinning] means that `Pin` propagates (projects) to members.
-/// In this case
-///
-/// [Structural pinning]: https://doc.rust-lang.org/std/pin/index.html#projections-and-structural-pinning
+/// [structural pinning]: https://doc.rust-lang.org/std/pin/index.html#projections-and-structural-pinning
 pub struct PinArray<T, const SIZE: usize> {
     elements: [T; SIZE],
     _pin: PhantomPinned,
@@ -35,7 +32,7 @@ impl<T, const SIZE: usize> PinArray<T, SIZE> {
     ///
     /// # Safety
     /// This is `unsafe` as the caller must guarantee that the array of `T` is
-    /// valid for to be structural pinning. If this is not in fact the case then
+    /// can be structurally pinned i pinning. If this is not in fact the case then
     /// you should not use this type
     pub unsafe fn new_unchecked(elements: [T; SIZE]) -> Self {
         Self {
@@ -44,32 +41,103 @@ impl<T, const SIZE: usize> PinArray<T, SIZE> {
         }
     }
 
-    pub fn get_pin_mut(self: Pin<&mut Self>, idx: usize) -> Option<Pin<&mut T>> {
+    /// Attempt to get a reference to an element by index
+    ///
+    /// Note this does not require `Pin` as a reference is trivially
+    /// `Unpin`
+    ///
+    /// ```
+    /// # use core::pin::{pin, Pin};
+    /// # use pin_array::PinArray;
+    /// let p = pin!(PinArray::new([1, 2, 3]));
+    /// assert_eq!(p.get(0), Some(&1));
+    /// assert_eq!(p.get(1), Some(&2));
+    /// assert_eq!(p.get(2), Some(&3));
+    /// ```
+    pub fn get(&self, idx: usize) -> Option<&T> {
+        self.elements.get(idx)
+    }
+
+    /// Attempt to get a pinned reference to an element by index
+    ///
+    /// Note this requires `self` to be pinned
+    ///
+    /// ```
+    /// # use core::pin::{pin, Pin};
+    /// # use pin_array::PinArray;
+    /// let mut p = pin!(PinArray::new([1, 2, 3]));
+    /// assert_eq!(p.as_mut().get_pin(0), Some(Pin::new(&mut 1)));
+    /// assert_eq!(p.as_mut().get_pin(1), Some(Pin::new(&mut 2)));
+    /// assert_eq!(p.as_mut().get_pin(2), Some(Pin::new(&mut 3)));
+    /// ```
+    pub fn get_pin(self: Pin<&mut Self>, idx: usize) -> Option<Pin<&mut T>> {
         unsafe { self.get_unchecked_mut() }
             .elements
             .get_mut(idx)
             .map(|e| unsafe { Pin::new_unchecked(e) })
     }
-    pub fn get(&self, idx: usize) -> Option<&T> {
-        self.elements.get(idx)
-    }
-    pub fn iter(&self) -> Iter<'_, T, SIZE> {
-        Iter { i: 0, els: self }
-    }
-    pub fn iter_mut(self: Pin<&mut Self>) -> IterMut<'_, T, SIZE> {
-        IterMut::new(unsafe { self.get_unchecked_mut() })
-    }
 
-    pub fn as_array(&self) -> [&T; SIZE] {
+    /// Convert this `PinArray` to an array of references
+    ///
+    /// Immutable counterpart to [`PinArray::as_pin_array`]
+    ///
+    /// ```
+    /// # use core::pin::{pin, Pin};
+    /// # use pin_array::PinArray;
+    /// let p = pin!(PinArray::new(["a", "b"]));
+    /// assert_eq!(p.as_ref_array(), [&"a", &"b"]);
+    /// ```
+    pub fn as_ref_array(&self) -> [&T; SIZE] {
         core::array::from_fn(|i| &self.elements[i])
     }
 
+    /// Convert this pinned `PinArray` to an array of pinned mutable references
+    ///
+    /// Mutable counterpart to [`PinArray::as_ref_array`]
+    ///
+    /// ```
+    /// # use core::pin::{pin, Pin};
+    /// # use pin_array::PinArray;
+    /// let mut p = pin!(PinArray::new(["a", "b"]));
+    /// assert_eq!(p.as_pin_array(), [Pin::new(&mut "a"), Pin::new(&mut "b")]);
+    /// ```
     pub fn as_pin_array<'me>(self: Pin<&'me mut Self>) -> [Pin<&'me mut T>; SIZE] {
         let arr = unsafe { self.get_unchecked_mut().elements.as_mut_ptr() };
         core::array::from_fn(|i| {
             let p = unsafe { arr.add(i) };
             unsafe { Pin::new_unchecked(p.as_mut().unwrap()) }
         })
+    }
+
+    /// Get an iterator over references to the elements
+    ///
+    /// ```
+    /// # use core::pin::{pin, Pin};
+    /// # use pin_array::PinArray;
+    /// let p = pin!(PinArray::new(['h', 'i']));
+    /// let mut i = p.iter();
+    /// assert_eq!(i.next(), Some(&'h'));
+    /// assert_eq!(i.next(), Some(&'i'));
+    /// assert_eq!(i.next(), None);
+    /// ```
+    pub fn iter(&self) -> Iter<'_, T, SIZE> {
+        Iter { i: 0, els: self }
+    }
+
+    /// Get an iterator over pinned mutable references to the elements
+    ///
+    ///
+    /// ```
+    /// # use core::pin::{pin, Pin};
+    /// # use pin_array::PinArray;
+    /// let mut p = pin!(PinArray::new(['h', 'i']));
+    /// let mut i = p.iter_mut();
+    /// assert_eq!(i.next(), Some(Pin::new(&mut 'h')));
+    /// assert_eq!(i.next(), Some(Pin::new(&mut 'i')));
+    /// assert_eq!(i.next(), None);
+    /// ```
+    pub fn iter_mut(self: Pin<&mut Self>) -> IterMut<'_, T, SIZE> {
+        IterMut::new(unsafe { self.get_unchecked_mut() })
     }
 }
 

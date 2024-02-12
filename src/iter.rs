@@ -2,6 +2,9 @@ use std::{marker::PhantomData, pin::Pin, ptr::NonNull};
 
 use crate::PinArray;
 
+/// Iterator over references of a [`PinArray`]
+///
+/// For more see [`PinArray::iter`]
 pub struct Iter<'p, T, const SZ: usize> {
     pub(crate) i: usize,
     pub(crate) els: &'p PinArray<T, SZ>,
@@ -20,6 +23,9 @@ impl<'p, T, const SZ: usize> Iterator for Iter<'p, T, SZ> {
     }
 }
 
+/// Iterator over pinned parts of a [`PinArray`]
+///
+/// For more see [`PinArray::iter_mut`]
 pub struct IterMut<'p, T, const SZ: usize> {
     i: usize,
     el_ptr: NonNull<T>,
@@ -27,6 +33,10 @@ pub struct IterMut<'p, T, const SZ: usize> {
 }
 
 impl<'p, T, const SZ: usize> IterMut<'p, T, SZ> {
+    /// Create from a mutable reference to its target
+    ///
+    /// Note that without unsafe code this is not possible to call directly unless `T` is [`Unpin`]
+    /// you should use [`PinArray::iter_mut`] instead
     pub fn new(parent: &mut PinArray<T, SZ>) -> Self {
         Self {
             i: 0,
