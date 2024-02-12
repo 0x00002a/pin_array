@@ -25,7 +25,7 @@ impl<T: Default, const SIZE: usize> Default for PinArray<T, SIZE> {
 }
 
 impl<T, const SIZE: usize> PinArray<T, SIZE> {
-    /// Create a new `PinArray` for data that does not need to be pinned
+    /// Create a new `PinArray` from elements
     pub fn new(elements: [T; SIZE]) -> Self {
         Self {
             elements,
