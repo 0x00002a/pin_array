@@ -2,6 +2,13 @@
 name = "pin_array"
 version = "0.1.0"
 edition = "2021"
+author = "Natasha England-Elbro"
+license = "MIT"
+description = "Tiny crate providing an array with structurally projected pinning"
+readme = "README.md"
+repository = "https://github.com/0x00002a/pin_array"
+keywords = ["collection", "pin", "unsafe", "pinning", "array"]
+categories = ["data-structures", "rust-patterns"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
