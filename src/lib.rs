@@ -51,10 +51,26 @@ impl<T, const SIZE: usize> PinArray<T, SIZE> {
         Iter { i: 0, els: self }
     }
     pub fn iter_mut(self: Pin<&mut Self>) -> IterMut<'_, T, SIZE> {
-        IterMut { i: 0, els: self }
+        IterMut::new(unsafe { self.get_unchecked_mut() })
     }
 }
 impl<T: Unpin, const SIZE: usize> Unpin for PinArray<T, SIZE> {}
+
+#[cfg(test)]
+mod tests {
+    use crate::PinArray;
+
+    // this is mostly here to check that IterMut doesn't cause UB according to MIRI
+    #[test]
+    fn mut_iterator_multi_borrow_ub() {
+        let mut p = core::pin::pin!(PinArray::new([1, 2, 3, 4]));
+        let mut iter = p.as_mut().iter_mut();
+        let v1 = iter.next();
+        let v2 = iter.next();
+        assert_eq!(v1.map(|o| *o.get_mut()), Some(1));
+        assert_eq!(v2.map(|o| *o.get_mut()), Some(2));
+    }
+}
 
 #[cfg(test)]
 mod impl_tests {

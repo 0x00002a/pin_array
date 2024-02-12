@@ -1,7 +1,6 @@
-use std::pin::Pin;
+use std::{marker::PhantomData, pin::Pin, ptr::NonNull};
 
 use crate::PinArray;
-
 
 pub struct Iter<'p, T, const SZ: usize> {
     pub(crate) i: usize,
@@ -22,8 +21,19 @@ impl<'p, T, const SZ: usize> Iterator for Iter<'p, T, SZ> {
 }
 
 pub struct IterMut<'p, T, const SZ: usize> {
-    pub(crate) i: usize,
-    pub(crate) els: Pin<&'p mut PinArray<T, SZ>>,
+    i: usize,
+    el_ptr: NonNull<T>,
+    _phant: PhantomData<&'p mut PinArray<T, SZ>>,
+}
+
+impl<'p, T, const SZ: usize> IterMut<'p, T, SZ> {
+    pub fn new(parent: &mut PinArray<T, SZ>) -> Self {
+        Self {
+            i: 0,
+            el_ptr: unsafe { NonNull::new_unchecked(parent.elements.as_mut_ptr()) },
+            _phant: PhantomData,
+        }
+    }
 }
 impl<'p, T, const SZ: usize> Iterator for IterMut<'p, T, SZ> {
     type Item = Pin<&'p mut T>;
@@ -32,9 +42,9 @@ impl<'p, T, const SZ: usize> Iterator for IterMut<'p, T, SZ> {
         if self.i >= SZ {
             None
         } else {
-            let l = self.els.as_mut().get_pin_mut(self.i).unwrap();
+            let lp = unsafe { self.el_ptr.as_ptr().add(self.i) };
             self.i += 1;
-            Some(unsafe { std::mem::transmute::<Pin<&mut T>, Pin<&'p mut T>>(l) })
+            Some(unsafe { Pin::new_unchecked(lp.as_mut().unwrap()) })
         }
     }
 }
