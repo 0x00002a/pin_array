@@ -1,3 +1,7 @@
+//! Library that provides a [structurally projecting] array type
+//!
+//!
+//! [structurally projecting]: https://doc.rust-lang.org/std/pin/index.html#projections-and-structural-pinning
 use std::{marker::PhantomPinned, pin::Pin};
 
 use iter::{Iter, IterMut};
@@ -22,22 +26,10 @@ impl<T: Default, const SIZE: usize> Default for PinArray<T, SIZE> {
 
 impl<T, const SIZE: usize> PinArray<T, SIZE> {
     /// Create a new `PinArray` for data that does not need to be pinned
-    pub fn new(elements: [T; SIZE]) -> Self
-    where
-        T: Unpin,
-    {
-        unsafe { Self::new_unchecked(elements) }
-    }
-    /// Create a new `PinArray` without checking the Pin invariants
-    ///
-    /// # Safety
-    /// This is `unsafe` as the caller must guarantee that the array of `T` is
-    /// can be structurally pinned i pinning. If this is not in fact the case then
-    /// you should not use this type
-    pub unsafe fn new_unchecked(elements: [T; SIZE]) -> Self {
+    pub fn new(elements: [T; SIZE]) -> Self {
         Self {
             elements,
-            _pin: Default::default(),
+            _pin: PhantomPinned,
         }
     }
 
@@ -175,7 +167,7 @@ mod tests {
 
     #[track_caller]
     fn mut_iter_test<T: Copy + Eq + core::fmt::Debug, const SZ: usize>(mut els: [T; SZ]) {
-        let mut p = core::pin::pin!(unsafe { PinArray::new_unchecked(els) });
+        let mut p = core::pin::pin!(PinArray::new(els));
         let iter = p.as_mut().iter_mut();
         let vs = iter.collect::<Vec<_>>();
         assert_eq!(
