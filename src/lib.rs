@@ -11,6 +11,7 @@ pub mod iter;
 /// A [structurally pinned][structural pinning] array of values
 ///
 /// [structural pinning]: https://doc.rust-lang.org/std/pin/index.html#projections-and-structural-pinning
+#[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Clone, Copy)]
 pub struct PinArray<T, const SIZE: usize> {
     elements: [T; SIZE],
     _pin: PhantomPinned,
