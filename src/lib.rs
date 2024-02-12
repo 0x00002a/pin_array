@@ -4,6 +4,12 @@ use iter::{Iter, IterMut};
 
 pub mod iter;
 
+/// An structurally pinned array of values
+///
+/// [Structural pinning] means that `Pin` propagates (projects) to members.
+/// In this case
+///
+/// [Structural pinning]: https://doc.rust-lang.org/std/pin/index.html#projections-and-structural-pinning
 pub struct PinArray<T, const SIZE: usize> {
     elements: [T; SIZE],
     _pin: PhantomPinned,
@@ -53,14 +59,28 @@ impl<T, const SIZE: usize> PinArray<T, SIZE> {
     pub fn iter_mut(self: Pin<&mut Self>) -> IterMut<'_, T, SIZE> {
         IterMut::new(unsafe { self.get_unchecked_mut() })
     }
+
+    pub fn as_array(&self) -> [&T; SIZE] {
+        core::array::from_fn(|i| &self.elements[i])
+    }
+
+    pub fn as_pin_array<'me>(self: Pin<&'me mut Self>) -> [Pin<&'me mut T>; SIZE] {
+        let arr = unsafe { self.get_unchecked_mut().elements.as_mut_ptr() };
+        core::array::from_fn(|i| {
+            let p = unsafe { arr.add(i) };
+            unsafe { Pin::new_unchecked(p.as_mut().unwrap()) }
+        })
+    }
 }
+
 impl<T: Unpin, const SIZE: usize> Unpin for PinArray<T, SIZE> {}
 
 #[cfg(test)]
 mod tests {
     use std::{
         marker::{PhantomData, PhantomPinned},
-        pin::Pin,
+        ops::Deref,
+        pin::{pin, Pin},
     };
 
     use crate::PinArray;
@@ -111,6 +131,15 @@ mod tests {
     #[test]
     fn mut_iter_zst() {
         mut_iter_test([PhantomData::<()>, PhantomData, PhantomData]);
+    }
+    #[test]
+    fn as_pin_array_mut_ub() {
+        let arr = pin!(PinArray::new([1, 2, 3]));
+        let vs = arr.as_pin_array();
+        let v1 = vs[0].deref();
+        let v2 = vs[1].deref();
+        assert_ne!(v1, v2);
+        println!("{vs:#?}");
     }
 }
 
