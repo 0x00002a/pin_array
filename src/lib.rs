@@ -34,6 +34,25 @@ impl<T, const SIZE: usize> PinArray<T, SIZE> {
         }
     }
 
+    /// Get the length of the [`PinArray`]
+    ///
+    /// ```
+    /// # use pin_array::PinArray;
+    /// assert_eq!(PinArray::new(['a', 'b', 'c']).len(), 3);
+    /// ```
+    pub const fn len(&self) -> usize {
+        SIZE
+    }
+    /// Check if the array is empty
+    ///
+    /// ```
+    /// # use pin_array::PinArray;
+    /// assert!(PinArray::<u32, 0>::new([]).is_empty());
+    /// ```
+    pub const fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
     /// Attempt to get a reference to an element by index
     ///
     /// Note this does not require `Pin` as a reference is trivially
