@@ -2,7 +2,16 @@
 //!
 //!
 //! [structurally projecting]: https://doc.rust-lang.org/std/pin/index.html#projections-and-structural-pinning
-use std::{marker::PhantomPinned, pin::Pin};
+//! 
+//! ## Cargo features
+//! 
+//! By default, feature `std` is enabled. 
+//! 
+//! With default features disabled, this crate becomes `#![no_std]`.
+//! It's still fully functional. Just a few tests that require the standard library are disabled.
+#![cfg_attr(not(feature = "std"),no_std)]
+    
+use core::{marker::PhantomPinned, pin::Pin};
 
 use iter::{Iter, IterMut};
 
@@ -19,7 +28,7 @@ pub struct PinArray<T, const SIZE: usize> {
 impl<T: Default, const SIZE: usize> Default for PinArray<T, SIZE> {
     fn default() -> Self {
         Self {
-            elements: std::array::from_fn(|_| Default::default()),
+            elements: core::array::from_fn(|_| Default::default()),
             _pin: Default::default(),
         }
     }
@@ -157,7 +166,7 @@ impl<T: Unpin, const SIZE: usize> Unpin for PinArray<T, SIZE> {}
 
 #[cfg(test)]
 mod tests {
-    use std::{
+    use core::{
         marker::{PhantomData, PhantomPinned},
         ops::Deref,
         pin::{pin, Pin},
@@ -185,6 +194,7 @@ mod tests {
         }
     }
 
+    #[cfg(feature = "std")]
     #[track_caller]
     fn mut_iter_test<T: Copy + Eq + core::fmt::Debug, const SZ: usize>(mut els: [T; SZ]) {
         let mut p = core::pin::pin!(PinArray::new(els));
@@ -212,6 +222,8 @@ mod tests {
     fn mut_iter_zst() {
         mut_iter_test([PhantomData::<()>, PhantomData, PhantomData]);
     }
+
+    #[cfg(feature = "std")]
     #[test]
     fn as_pin_array_mut_ub() {
         let arr = pin!(PinArray::new([1, 2, 3]));

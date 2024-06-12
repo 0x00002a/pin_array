@@ -1,4 +1,4 @@
-use std::{marker::PhantomData, pin::Pin, ptr::NonNull};
+use core::{marker::PhantomData, pin::Pin, ptr::NonNull};
 
 use crate::PinArray;
 
