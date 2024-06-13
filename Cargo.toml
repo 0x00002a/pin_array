@@ -1,6 +1,6 @@
 [package]
 name = "pin_array"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 authors = ["Natasha England-Elbro"]
 license = "MIT"
@@ -16,4 +16,3 @@ categories = ["data-structures", "rust-patterns", "no-std::no-alloc"]
 
 [dev-dependencies]
 static_assertions = "1.1.0"
-
