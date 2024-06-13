@@ -2,7 +2,7 @@
 name = "pin_array"
 version = "0.1.1"
 edition = "2021"
-author = "Natasha England-Elbro"
+authors = ["Natasha England-Elbro"]
 license = "MIT"
 description = "Tiny crate providing an array with structurally projected pinning"
 readme = "README.md"
