@@ -7,14 +7,10 @@ license = "MIT"
 description = "Tiny crate providing an array with structurally projected pinning"
 readme = "README.md"
 repository = "https://github.com/0x00002a/pin_array"
-keywords = ["collection", "pin", "unsafe", "pinning", "array"]
-categories = ["data-structures", "rust-patterns"]
+keywords = ["collection", "pin", "pinning", "array", "no-std"]
+categories = ["data-structures", "rust-patterns", "no-std::no-alloc"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[features]
-default = ["std"]
-std = []
 
 [dependencies]
 

@@ -1,16 +1,11 @@
-//! Library that provides a [structurally projecting] array type
+//! Library that provides a [structurally projecting] array type.
 //!
 //!
 //! [structurally projecting]: https://doc.rust-lang.org/std/pin/index.html#projections-and-structural-pinning
-//! 
-//! ## Cargo features
-//! 
-//! By default, feature `std` is enabled. 
-//! 
-//! With default features disabled, this crate becomes `#![no_std]`.
-//! It's still fully functional. Just a few tests that require the standard library are disabled.
-#![cfg_attr(not(feature = "std"),no_std)]
-    
+//!
+//! This crate is `no_std` compatible and does not require `alloc`.
+#![no_std]
+
 use core::{marker::PhantomPinned, pin::Pin};
 
 use iter::{Iter, IterMut};
@@ -194,18 +189,14 @@ mod tests {
         }
     }
 
-    #[cfg(feature = "std")]
     #[track_caller]
     fn mut_iter_test<T: Copy + Eq + core::fmt::Debug, const SZ: usize>(mut els: [T; SZ]) {
         let mut p = core::pin::pin!(PinArray::new(els));
-        let iter = p.as_mut().iter_mut();
-        let vs = iter.collect::<Vec<_>>();
-        assert_eq!(
-            vs,
-            els.iter_mut()
-                .map(|e| unsafe { Pin::new_unchecked(e) })
-                .collect::<Vec<_>>()
-        );
+        let iter_p = p.as_mut().iter_mut();
+        let iter_els = els.iter_mut().map(|e| unsafe { Pin::new_unchecked(e) });
+        iter_p
+            .zip(iter_els)
+            .for_each(|(e_p, e_els)| assert_eq!(e_p, e_els));
     }
 
     // this is mostly here to check that IterMut doesn't cause UB according to MIRI
@@ -223,7 +214,6 @@ mod tests {
         mut_iter_test([PhantomData::<()>, PhantomData, PhantomData]);
     }
 
-    #[cfg(feature = "std")]
     #[test]
     fn as_pin_array_mut_ub() {
         let arr = pin!(PinArray::new([1, 2, 3]));
@@ -231,7 +221,7 @@ mod tests {
         let v1 = vs[0].deref();
         let v2 = vs[1].deref();
         assert_ne!(v1, v2);
-        println!("{vs:#?}");
+        // println!("{vs:#?}");
     }
 }
 
